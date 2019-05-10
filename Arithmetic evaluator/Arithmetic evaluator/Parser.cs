@@ -6,16 +6,33 @@ using System.Threading.Tasks;
 
 namespace Arithmetic_evaluator
 {
-    class Parser
+    public class Parser
     {
-        public static double? Evaluator(string input)
+        public static double Evaluator(string input)
         {
+            // first, remove whitespace/newlines
             input = input.Replace(" ", "");
+            input = input.Replace("\t", "");
+            input = input.Replace("\n", "");
+            input = input.Replace("\r", "");
+
+            // secondly, do a quick check for invalid characters
+            if (!CheckInvalidChars(input))
+            {
+                // return null;
+                throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
+            }
+
             if (input.Contains("(") || input.Contains(")"))
             {
                 if (!ValidParenthesys(input))
-                    return null;
+                {
+                    //return null;
+                    throw new FormatException("This expression has an unmatching number of opening and closing parantheses. Cannot be evaluated.");
+                }
 
+                // a listing of substitutions to make
+                // as expressions within parantheses are evaluated and resolved
                 Dictionary<string, string> Changes = new Dictionary<string, string>();
 
                 bool openPar = false;
@@ -56,8 +73,19 @@ namespace Arithmetic_evaluator
             }
 
             List<string> ParsedOperations = OperationParser(input);
-            return OperationEvaluator(ref ParsedOperations);
+            if (ParsedOperations != null)
+            {
+                return OperationEvaluator(ref ParsedOperations);
+            }
+            else
+            {
+                // throwing a FormatException would be better than a NullReferenceException
+                // since a NullReference just means something somewhere was null lol
+                throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
+            }
         }
+
+        // checks to make sure opening parantheses == closing parantheses (i.e. "(())" is good, "(()" is not)
         static bool ValidParenthesys(string input)
         {
             int openPar = 0;
@@ -76,6 +104,19 @@ namespace Arithmetic_evaluator
             while (OperationList.Count > 1)
             {
                 int index = 0;
+                while (index < OperationList.Count)
+                {
+                    if (OperationList[index] == "^")
+                    {
+                        double div1 = double.Parse(OperationList[index - 1]);
+                        double div2 = double.Parse(OperationList[index + 1]);
+                        OperationList[index - 1] = Math.Pow(div1, div2).ToString();
+                        OperationList.RemoveAt(index);
+                        OperationList.RemoveAt(index);
+                    }
+                    index++;
+                }
+                index = 0;
                 while (index < OperationList.Count)
                 {
                     if (OperationList[index] == "/")
@@ -136,7 +177,7 @@ namespace Arithmetic_evaluator
             int index = 0;
             while (index < input.Length)
             {
-                if (CharEvaluator(input[index]) == 0)
+                if (CharEvaluator(input[index]) == 0) // number, digit separator
                 {
                     string SubEvaluator = "";
 
@@ -159,14 +200,14 @@ namespace Arithmetic_evaluator
                         }
                     }
                 }
-                else if (CharEvaluator(input[index]) == 1)
+                else if (CharEvaluator(input[index]) == 1) // operation
                 {
                     Operations.Add(input[index].ToString());
                     index++;
                 }
-                else
+                else // paranthesis, or invalid character (parantheses should not be showing up at this point)
                 {
-                    return null;
+                    return null; // ends up triggering FormatException
                 }
             }
             return Operations;
@@ -179,12 +220,26 @@ namespace Arithmetic_evaluator
         {
             if ("0987654321.,".Contains(input))
                 return 0;
-            else if ("/*-+".Contains(input))
+            else if ("/*-+^".Contains(input))
                 return 1;
             else if ("()".Contains(input))
                 return 2;
             else
                 return -1;
+        }
+
+        static bool CheckInvalidChars(string input)
+        {
+            // iterate through each character to make sure they're all valid
+            // if it's invalid, then we can fail fast
+            foreach (char c in input)
+            {
+                if (!"0987654321.,/*-+^()".Contains(c))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
