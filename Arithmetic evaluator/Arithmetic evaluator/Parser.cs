@@ -8,7 +8,7 @@ namespace Arithmetic_evaluator
 {
     public class Parser
     {
-        public static double Evaluator(string input)
+        public static double Evaluate(string input)
         {
             // first, remove whitespace/newlines
             input = input.Replace(" ", "");
@@ -16,16 +16,30 @@ namespace Arithmetic_evaluator
             input = input.Replace("\n", "");
             input = input.Replace("\r", "");
 
+            // if somehow anyone put in the proper symbols, let's replace it
+            input = input.Replace("×", "*");
+            input = input.Replace("⋅", "*");
+            input = input.Replace("÷", "/");
+            // also support someone putting in a backslash
+            input = input.Replace("\\", "/");
+
             // secondly, do a quick check for invalid characters
-            if (!CheckInvalidChars(input))
+            if (!PreCheckChars(input))
             {
                 // return null;
                 throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
             }
 
+            // move actual evaluation to its own function
+            // as the above char-replacements only need to be done once at the beginning
+            return PerformEvaluation(input);
+        }
+
+        static double PerformEvaluation(string input)
+        {
             if (input.Contains("(") || input.Contains(")"))
             {
-                if (!ValidParenthesys(input))
+                if (!CheckValidParenthesys(input))
                 {
                     //return null;
                     throw new FormatException("This expression has an unmatching number of opening and closing parantheses. Cannot be evaluated.");
@@ -37,12 +51,20 @@ namespace Arithmetic_evaluator
 
                 bool openPar = false;
                 int openIndex = 0;
+                char prev = ' ';
                 for (int i = 0; i < input.Length; i++)
                 {
                     if (!openPar)
                     {
                         if (input[i] == '(')
                         {
+                            // check for instances of an implied multiplication
+                            // i.e. 3(4+2) or (2-3)(4/6)
+                            if ("0123456789)".Contains(prev))
+                            {
+                                input = input.Insert(i, "*");
+                                i++;
+                            }
                             openPar = true;
                             openIndex = i;
                         }
@@ -55,13 +77,14 @@ namespace Arithmetic_evaluator
 
                             if (!Changes.ContainsKey(subInput))
                             {
-                                string evaluatedSubInput = Evaluator(subInput).ToString();
+                                string evaluatedSubInput = PerformEvaluation(subInput).ToString();
                                 Changes.Add(subInput, evaluatedSubInput);
                             }
                             openPar = false;
                             openIndex = 0;
                         }
                     }
+                    prev = input[i];
                 }
 
                 foreach (var item in Changes.Keys)
@@ -72,10 +95,10 @@ namespace Arithmetic_evaluator
                 input = input.Replace(")", "");
             }
 
-            List<string> ParsedOperations = OperationParser(input);
+            List<string> ParsedOperations = ParseOperations(input);
             if (ParsedOperations != null)
             {
-                return OperationEvaluator(ref ParsedOperations);
+                return PerformOperations(ref ParsedOperations);
             }
             else
             {
@@ -86,7 +109,7 @@ namespace Arithmetic_evaluator
         }
 
         // checks to make sure opening parantheses == closing parantheses (i.e. "(())" is good, "(()" is not)
-        static bool ValidParenthesys(string input)
+        static bool CheckValidParenthesys(string input)
         {
             int openPar = 0;
             int closePar = 0;
@@ -99,7 +122,7 @@ namespace Arithmetic_evaluator
             }
             return openPar == closePar;
         }
-        static double OperationEvaluator(ref List<string> OperationList)
+        static double PerformOperations(ref List<string> OperationList)
         {
             while (OperationList.Count > 1)
             {
@@ -171,19 +194,21 @@ namespace Arithmetic_evaluator
             }
             return double.Parse(OperationList[0]);
         }
-        static List<string> OperationParser(string input)
+        static List<string> ParseOperations(string input)
         {
-            List<string> Operations = new List<string>();
-            int index = 0;
+            List<string> Operations = new List<string>(); // organized list of operations to do
+            int index = 0; // current char looked at
+            int prevRes = -1; // store CheckChars result of previous number
+            string SubEvaluator = ""; // buffer for numbers
             while (index < input.Length)
             {
-                if (CharEvaluator(input[index]) == 0) // number, digit separator
+                if (CheckChars(input[index]) == 0) // number, digit separator
                 {
-                    string SubEvaluator = "";
-
+                    // quick loop to get through all the numbers
+                    // return to main while loop once we encounter something that isn't a number
                     for (int i = index; i < input.Length; i++)
                     {
-                        if (CharEvaluator(input[i]) == 0)
+                        if (CheckChars(input[i]) == 0)
                         {
                             SubEvaluator += input[i];
                             if (i == input.Length - 1)
@@ -195,15 +220,29 @@ namespace Arithmetic_evaluator
                         else
                         {
                             Operations.Add(SubEvaluator);
+                            SubEvaluator = "";
                             index = i;
                             break;
                         }
                     }
+                    prevRes = 0;
                 }
-                else if (CharEvaluator(input[index]) == 1) // operation
+                else if (CheckChars(input[index]) == 1) // operation
                 {
-                    Operations.Add(input[index].ToString());
+                    // special handling for negative numbers
+                    // check if the previous character was an operation (or start of string)
+                    // if so, probably indicating a negative number
+                    if ((prevRes == 1 || prevRes == -1) && input[index] == '-')
+                    {
+                        // put into SubEvaluator and move on
+                        SubEvaluator += input[index];
+                    }
+                    else
+                    {
+                        Operations.Add(input[index].ToString());
+                    }
                     index++;
+                    prevRes = 1;
                 }
                 else // paranthesis, or invalid character (parantheses should not be showing up at this point)
                 {
@@ -212,11 +251,11 @@ namespace Arithmetic_evaluator
             }
             return Operations;
         }
-        static int CharEvaluator(char input)
+        static int CheckChars(char input)
         {
-            return CharEvaluator(input.ToString());
+            return CheckChars(input.ToString());
         }
-        static int CharEvaluator(string input)
+        static int CheckChars(string input)
         {
             if ("0987654321.,".Contains(input))
                 return 0;
@@ -228,7 +267,7 @@ namespace Arithmetic_evaluator
                 return -1;
         }
 
-        static bool CheckInvalidChars(string input)
+        static bool PreCheckChars(string input)
         {
             // iterate through each character to make sure they're all valid
             // if it's invalid, then we can fail fast
