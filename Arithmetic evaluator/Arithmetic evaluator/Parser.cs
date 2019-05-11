@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Arithmetic_evaluator
 {
-    public class Parser
+    public static class Parser
     {
         public static double Evaluate(string input)
         {
@@ -103,7 +103,7 @@ namespace Arithmetic_evaluator
             else
             {
                 // throwing a FormatException would be better than a NullReferenceException
-                // since a NullReference just means something somewhere was null lol
+                // since a NullReference just means something somewhere was null, not as helpful lol
                 throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
             }
         }
@@ -198,7 +198,7 @@ namespace Arithmetic_evaluator
         {
             List<string> Operations = new List<string>(); // organized list of operations to do
             int index = 0; // current char looked at
-            int prevRes = -1; // store CheckChars result of previous number
+            int prevRes = -2; // store CheckChars result of previous number
             string SubEvaluator = ""; // buffer for numbers
             while (index < input.Length)
             {
@@ -232,9 +232,9 @@ namespace Arithmetic_evaluator
                     // special handling for negative numbers
                     // check if the previous character was an operation (or start of string)
                     // if so, probably indicating a negative number
-                    if ((prevRes == 1 || prevRes == -1) && input[index] == '-')
+                    if ((prevRes == 1 || prevRes == -2) && input[index] == '-')
                     {
-                        // put into SubEvaluator and move on
+                        // put into SubEvaluator
                         SubEvaluator += input[index];
                     }
                     else
