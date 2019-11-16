@@ -32,6 +32,8 @@ namespace Arithmetic_evaluator
             // also support someone putting in a backslash
             input = input.Replace("\\", "/");
 
+            // check to make sure the string is valid
+            // outputs as int so that we can give more relevant error messages
             int g = PreCheckString(input);
 
             if (g == 0)
@@ -50,17 +52,10 @@ namespace Arithmetic_evaluator
             {
                 throw new FormatException("This expression does not contain any numbers. Cannot be evaluated.");
             }
-
-            // secondly, do a quick check for invalid characters
-            if (!IsValidString(input))
+            else
             {
-                // return null;
-                throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
+                throw new FormatException("This expression cannot be evaluated for an undetermined reason.");
             }
-
-            // move actual evaluation to its own function
-            // as the above char-replacements only need to be done once at the beginning
-            return PerformEvaluation(input);
         }
 
         static double PerformEvaluation(string input)
