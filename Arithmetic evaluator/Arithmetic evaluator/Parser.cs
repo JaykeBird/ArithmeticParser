@@ -8,6 +8,15 @@ namespace Arithmetic_evaluator
 {
     public static class Parser
     {
+        /// <summary>
+        /// Evaluate an arithmetic expression and output the result (i.e. "2+5" will output "7"). See remarks for more info on supported functions.
+        /// </summary>
+        /// <param name="input">The arithmetic expression to evaluate.</param>
+        /// <exception cref="FormatException">Thrown if the expression is not valid (contains unrecognized characters or a mismatched number of parantheses).</exception>
+        /// <returns>The result of the expression.</returns>
+        /// <remarks>Supports addition, subtraction, multiplication, division, and exponents. Also supports parantheses (with implied multiplcation) and negative numbers.<para/>
+        /// Uses order of operations: exponents, division, multiplication, subtraction, addition.<para/>
+        /// Whitespace and new-line characters are removed prior to evaluation, and the literal characters ×, ⋅, and ÷ are replaced with their representations *, *, and /.</remarks>
         public static double Evaluate(string input)
         {
             // first, remove whitespace/newlines
@@ -23,8 +32,27 @@ namespace Arithmetic_evaluator
             // also support someone putting in a backslash
             input = input.Replace("\\", "/");
 
+            int g = PreCheckString(input);
+
+            if (g == 0)
+            {
+                return PerformEvaluation(input);
+            }
+            else if (g == 1)
+            {
+                throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
+            }
+            else if (g == 2)
+            {
+                throw new FormatException("This expression contains some characters in an invalid combination. Cannot be evaluated.");
+            }
+            else if (g == 3)
+            {
+                throw new FormatException("This expression does not contain any numbers. Cannot be evaluated.");
+            }
+
             // secondly, do a quick check for invalid characters
-            if (!PreCheckChars(input))
+            if (!IsValidString(input))
             {
                 // return null;
                 throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
@@ -103,7 +131,7 @@ namespace Arithmetic_evaluator
             else
             {
                 // throwing a FormatException would be better than a NullReferenceException
-                // since a NullReference just means something somewhere was null, not as helpful lol
+                // since a NullReferenceException just means something somewhere was null, not as helpful lol
                 throw new FormatException("This expression contains some unrecognized characters. Cannot be evaluated.");
             }
         }
@@ -194,6 +222,7 @@ namespace Arithmetic_evaluator
             }
             return double.Parse(OperationList[0]);
         }
+
         static List<string> ParseOperations(string input)
         {
             List<string> Operations = new List<string>(); // organized list of operations to do
@@ -251,10 +280,12 @@ namespace Arithmetic_evaluator
             }
             return Operations;
         }
+
         static int CheckChars(char input)
         {
             return CheckChars(input.ToString());
         }
+
         static int CheckChars(string input)
         {
             if ("0987654321.,".Contains(input))
@@ -267,8 +298,82 @@ namespace Arithmetic_evaluator
                 return -1;
         }
 
-        static bool PreCheckChars(string input)
+
+        static int PreCheckString(string input)
         {
+            bool hasnumber = false;
+            char prev = '0';
+
+            // iterate through each character to make sure they're all valid
+            // if it's invalid, then we can fail fast
+            foreach (char c in input)
+            {
+                if (!"0987654321.,/*-+^()".Contains(c))
+                {
+                    return 1;
+                }
+                else if ("0987654321".Contains(c))
+                {
+                    hasnumber = true;
+                }
+
+                if (prev == '0')
+                {
+                    if (c == '/' || c == '*' || c == '+' || c == '-')
+                    {
+                        prev = c;
+                    }
+                }
+                else
+                {
+                    if (c == '/' || c == '*' || c == '+')
+                    {
+                        return 2;
+                    }
+                    else if (c == '-')
+                    {
+                        prev = '-';
+                    }
+                    else
+                    {
+                        prev = '0';
+                    }
+                }
+            }
+
+            if (!hasnumber)
+            {
+                return 3;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Check if a string can be parsed as an expression.
+        /// </summary>
+        /// <param name="input">The string to parse.</param>
+        /// <returns>True if it is a string that can be parsed. False if it contains invalid characters.</returns>
+        public static bool IsValidString(string input)
+        {
+            // first, remove whitespace/newlines
+            input = input.Replace(" ", "");
+            input = input.Replace("\t", "");
+            input = input.Replace("\n", "");
+            input = input.Replace("\r", "");
+
+            // if somehow anyone put in the proper symbols, let's replace it
+            input = input.Replace("×", "*");
+            input = input.Replace("⋅", "*");
+            input = input.Replace("÷", "/");
+            // also support someone putting in a backslash
+            input = input.Replace("\\", "/");
+
+            // check for invalid combinations
+            // i.e. 3+*3
+            char prev = '0';
+            bool hasnumber = false;
+
             // iterate through each character to make sure they're all valid
             // if it's invalid, then we can fail fast
             foreach (char c in input)
@@ -277,7 +382,40 @@ namespace Arithmetic_evaluator
                 {
                     return false;
                 }
+                else if ("0987654321".Contains(c))
+                {
+                    hasnumber = true;
+                }
+
+                if (prev == '0')
+                {
+                    if (c == '/' || c == '*' || c == '+' || c == '-')
+                    {
+                        prev = c;
+                    }
+                }
+                else
+                {
+                    if (c == '/' || c == '*' || c == '+')
+                    {
+                        return false;
+                    }
+                    else if (c == '-')
+                    {
+                        prev = '-';
+                    }
+                    else
+                    {
+                        prev = '0';
+                    }
+                }
             }
+
+            if (!hasnumber)
+            {
+                return false;
+            }
+
             return true;
         }
     }
