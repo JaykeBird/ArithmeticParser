@@ -2,7 +2,7 @@
 
 A simple parser/evaluator for math expressions in C#.
 
-The library is built with both a .NET Framework 4.5 version and a .NET Standard 2.0 version.
+The library is built with a .NET Standard 2.0 version, but also versions for .NET Framework 3.5 and 4.5.
 
 ## How to use
 `double result = Parser.Evaluate("(3+4)*-2");`
