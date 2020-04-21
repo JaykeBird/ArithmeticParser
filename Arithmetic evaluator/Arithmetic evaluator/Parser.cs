@@ -80,6 +80,7 @@ namespace Arithmetic_evaluator
                 Dictionary<string, string> Changes = new Dictionary<string, string>();
 
                 bool openPar = false;
+                bool justClosed = false;
                 int openIndex = 0;
                 char prev = ' ';
                 for (int i = 0; i < input.Length; i++)
@@ -97,6 +98,17 @@ namespace Arithmetic_evaluator
                             }
                             openPar = true;
                             openIndex = i;
+                            justClosed = false;
+                        }
+                        else if (justClosed)
+                        {
+                            if ("0123456789".Contains(input[i]))
+                            {
+                                input = input.Insert(i, "*");
+                                i++;
+                            }
+
+                            justClosed = false;
                         }
                     }
                     else
@@ -112,6 +124,7 @@ namespace Arithmetic_evaluator
                             }
                             openPar = false;
                             openIndex = 0;
+                            justClosed = true;
                         }
                     }
                     prev = input[i];

@@ -24,6 +24,7 @@ namespace Arithmetic_evaluator
             RunEvaluator("-(3+4)*-2"); //     14
             RunEvaluator("3+3 * 3+3"); //     15
             RunEvaluator("8 / 2(2+2)"); //    16
+            RunEvaluator("5+(6/3+3)2+2"); //  17
             RunEvaluator("150/(6+3*8)-5"); // 0
             RunEvaluator("(2-3)(4/6)"); //    -0.6666666...
 
@@ -35,6 +36,7 @@ namespace Arithmetic_evaluator
             RunEvaluator("apple");
             RunEvaluator("3*/3");
             RunEvaluator("3+-*4");
+            RunEvaluator("(5+2");
             RunEvaluator("*");
 
             // original one
