@@ -31,7 +31,7 @@ namespace Arithmetic_evaluator
             // also support someone putting in a backslash
             input = input.Replace("\\", "/");
 
-            // check to make sure the string is valid
+            // check the string to make sure it's valid
             // outputs as int so that we can give more relevant error messages
             int g = PreCheckString(input);
 
@@ -50,6 +50,14 @@ namespace Arithmetic_evaluator
             else if (g == 3)
             {
                 throw new FormatException("This expression does not contain any numbers. Cannot be evaluated.");
+            }
+            else if (g == 4)
+            {
+                throw new FormatException("This expression ends with an operator character, which is invalid. Cannot be evaluated.");
+            }
+            else if (g == 5)
+            {
+                throw new FormatException("This expression starts with an operator character, which is invalid. Cannot be evaluated.");
             }
             else
             {
@@ -117,10 +125,17 @@ namespace Arithmetic_evaluator
                 input = input.Replace(")", "");
             }
 
-            List<string> ParsedOperations = ParseOperations(input);
+            var ParsedOperations = ParseOperations(input);
             if (ParsedOperations != null)
             {
-                return PerformOperations(ref ParsedOperations);
+                try
+                {
+                    return PerformOperations(ref ParsedOperations);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    throw new FormatException("This expression contains an operator without a number to evaluate with it. Cannot be evaluated.");
+                }
             }
             else
             {
@@ -295,6 +310,7 @@ namespace Arithmetic_evaluator
 
         static int PreCheckString(string input)
         {
+
             bool hasnumber = false;
             char prev = '0';
 
@@ -340,6 +356,16 @@ namespace Arithmetic_evaluator
                 return 3;
             }
 
+            if (input.EndsWith("/") || input.EndsWith("*") || input.EndsWith("+") || input.EndsWith("-"))
+            {
+                return 4;
+            }
+
+            if (input.StartsWith("+") || input.StartsWith("*") || input.StartsWith("/"))
+            {
+                return 5;
+            }
+
             return 0;
         }
 
@@ -367,6 +393,16 @@ namespace Arithmetic_evaluator
             // i.e. 3+*3
             char prev = '0';
             bool hasnumber = false;
+
+            if (input.EndsWith("/") || input.EndsWith("*") || input.EndsWith("+") || input.EndsWith("-"))
+            {
+                return false;
+            }
+
+            if (input.StartsWith("+") || input.StartsWith("*") || input.StartsWith("/"))
+            {
+                return false;
+            }
 
             // iterate through each character to make sure they're all valid
             // if it's invalid, then we can fail fast
